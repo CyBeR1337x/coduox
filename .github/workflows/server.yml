@@ -52,7 +52,7 @@ jobs:
             *) flavor=noauth ;;
           esac
           mkdir -p .workbench/packages
-          tools/linux/package-server.sh \
+          bash tools/linux/package-server.sh \
             ".workbench/build/server/linux-x86_64-$flavor/coduo_lnxded_recovered" \
             .workbench/build/game/linux-x86_64/game.mp.uo.x86_64.so \
             ".workbench/packages/package-${{ matrix.auth }}.tar.gz" \
