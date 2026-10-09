@@ -19,8 +19,10 @@ jobs:
     name: linux-x86_64 (AUTH=${{ matrix.auth }})
     runs-on: ubuntu-latest
     # The x87 float model the project requires is tied to GCC on x86, so the
-    # build uses one fixed GCC and C library instead of the runner's.
-    container: debian:12
+    # build uses one fixed GCC and C library instead of the runner's. The
+    # official Debian image is pulled from the Amazon ECR Public mirror, which
+    # does not apply Docker Hub's anonymous pull limit to shared runners.
+    container: public.ecr.aws/docker/library/debian:12
     strategy:
       fail-fast: false
       matrix:
