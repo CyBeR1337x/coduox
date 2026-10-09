@@ -140,6 +140,15 @@ DEPS := $(OBJS:.o=.d) $(SHARED_OBJS:.o=.d) $(EXE_OBJS:.o=.d) \
         $(EXE_I386_OBJS:.o=.d) $(WINDOWS_I386_OBJS:.o=.d) \
         $(WINDOWS_I686_OBJS:.o=.d)
 
+# The startup banner stamps the compiler's __DATE__, so its object is rebuilt
+# on every build to keep the printed build date current.
+COM_INIT_BUILD_DATE_OBJS := $(filter %/core_runtime/com_init_runtime.o, \
+        $(OBJS) $(SHARED_OBJS) $(EXE_OBJS) $(EXE_I386_OBJS) \
+        $(WINDOWS_I386_OBJS) $(WINDOWS_I686_OBJS))
+$(COM_INIT_BUILD_DATE_OBJS): coduomp-force-build-date
+.PHONY: coduomp-force-build-date
+coduomp-force-build-date:
+
 CPPFLAGS += -iquote $(STANDALONE_DIR)/bindings \
 	-iquote src/qcommon/bindings/default \
 	-Isrc \

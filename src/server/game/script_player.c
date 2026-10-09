@@ -14,6 +14,8 @@
 #include "scr_vm.h"
 #include "g_syscalls.h"
 #include "game_functions.h"
+#include "coduomp_player_data.h"
+#include "coduomp_player_geolocation.h"
 #include "compat/coduo_x87emu.h" /* defines EMULATE_X87; x87 shim when it is 1 */
 
 #define RELIABLE_SERVER_COMMAND 1
@@ -631,6 +633,31 @@ void PlayerCmd_setAngles(uint32_t entityNum)
 
     Scr_GetVector(0, angles);
     SetClientViewAngle(ent, angles);
+}
+
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: self getPlayerAngles() returns the
+ * player's view angles (pitch, yaw, roll) as a vector, as the CoD4x player
+ * method does. It is the read counterpart of setPlayerAngles. */
+void coduomp_player_cmd_getplayerangles(uint32_t entityNum)
+{
+    gentity_t *ent;
+
+    if (entityNum > ENTITYNUM_NONE) {
+        Scr_Error(va("%i is not a valid entity number", (int)entityNum));
+        return;
+    }
+
+    ent = &g_entities[entityNum];
+    if (ent->client == NULL) {
+        Scr_Error(va("entity %i is not a player", (int)entityNum));
+        return;
+    }
+    if (Scr_GetNumParam() != 0) {
+        Scr_Error("USAGE: self getPlayerAngles()");
+        return;
+    }
+
+    Scr_AddVector(ent->client->ps.viewAngles);
 }
 
 /* VERIFIED_DECOMPILER(0x469cb, 569cb_PlayerCmd_useButtonPressed.c, VERIFY-SCRIPT-PLAYER-CMDS-2026-06-17): DATAFLOW_VERIFIED; currentButtons use mask 0x40 result checked. */
@@ -1844,6 +1871,8 @@ static const script_method_t playerMethods[] = {
     {"getfractionmaxammo", PlayerCmd_getFractionMaxAmmo},
     {"setorigin", PlayerCmd_setOrigin},
     {"setplayerangles", PlayerCmd_setAngles},
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: CoD4x-compatible view-angle read. */
+    {"getplayerangles", coduomp_player_cmd_getplayerangles},
     {"usebuttonpressed", PlayerCmd_useButtonPressed},
     {"attackbuttonpressed", PlayerCmd_attackButtonPressed},
     {"meleebuttonpressed", PlayerCmd_meleeButtonPressed},
@@ -1891,6 +1920,13 @@ static const script_method_t playerMethods[] = {
     {"autodemostart", PlayerCmd_AutoDemoStart},
     {"autodemostop", PlayerCmd_AutoDemoStop},
     {"autoscreenshot", PlayerCmd_ClientAutoScreenshot},
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: per-player key/value store. */
+    {"setkey", coduomp_player_cmd_setkey},
+    {"getkey", coduomp_player_cmd_getkey},
+    {"deletekey", coduomp_player_cmd_deletekey},
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: CoD4x-compatible GeoIP country
+     * lookup. */
+    {"getgeolocation", coduomp_player_cmd_getgeolocation},
 };
 
 /* VERIFIED_DECOMPILER(0x49ed6, 59ed6_Player_GetMethod.c, VERIFY-SCRIPT-PLAYER-CMDS-2026-06-17): DATAFLOW_VERIFIED; entry-time requested-name capture, 60-entry table lookup, strcmp loop, canonical name writeback, callback return, and null miss checked. */

@@ -36,6 +36,17 @@ cvar_t *sv_privateClients;      /* original 0x0491cccc */
 cvar_t *sv_privatePassword;     /* original 0x0491cd20 */
 cvar_t *sv_allowDownload;       /* original 0x0491ccec */
 cvar_t *sv_maxRate;             /* original 0x0491cd00 */
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only test-client ping
+ * presentation. */
+cvar_t *sv_botRandomPing;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only local-testing GUID switch. */
+cvar_t *sv_localGuid;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only address-derived GUID
+ * switch. */
+cvar_t *sv_ipGuid;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only admission of clients denied by
+ * the CD-key authorize server. */
+cvar_t *sv_cracked;
 cvar_t *sv_wwwDownload;         /* original 0x0491cd2c */
 cvar_t *sv_wwwBaseURL;          /* original 0x0491cd38 */
 cvar_t *sv_wwwDlDisconnected;   /* original 0x0491ccfc */

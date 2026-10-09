@@ -1,4 +1,5 @@
 #include "server_operator_runtime.h"
+#include "coduomp_plugins.h"
 
 #include "qcommon/info.h"
 #include "qcommon/net_text.h"
@@ -310,6 +311,9 @@ void SV_AddOperatorCommands(void)
     Cmd_AddCommand("setdrawfriend", SV_SetDrawFriend_f);
     Cmd_AddCommand("setfriendlyfire", SV_SetFriendlyFire_f);
     Cmd_AddCommand("setkillcam", SV_SetKillcam_f);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: on-demand server plugins. */
+    Cmd_AddCommand("loadplugin", coduomp_plugins_load_f);
+    Cmd_AddCommand("plugins", coduomp_plugins_list_f);
 }
 
 void SV_RemoveOperatorCommands(void)

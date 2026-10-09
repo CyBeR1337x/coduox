@@ -34,6 +34,9 @@ enum {
 extern serverStatic_t svs;
 extern cvar_t *sv_kickBanTime;
 extern cvar_t *sv_onlyVisibleClients;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only admission of clients denied by
+ * the CD-key authorize server. */
+extern cvar_t *sv_cracked;
 
 void Com_Printf(const char *format, ...);
 void Com_DPrintf(const char *format, ...);
@@ -305,6 +308,29 @@ void SV_AuthorizeIpPacket(netadr_t from)
     }
 
     if (Q_stricmp(response, "deny") == 0) {
+        /* NOT_FROM_ORIGINAL_SOURCE: coduox: with sv_cracked set, a denied
+         * client is admitted with GUID 0. The GUID in a deny reply may belong
+         * to a key shared by several players, so it is never used for ban
+         * checks or player identity. */
+        if (sv_cracked->integer != 0) {
+            Com_Printf("admitting client denied by authorize server (%s): "
+                       "sv_cracked is set\n",
+                       reason != NULL ? reason : "");
+            challenge->numericGuid = 0;
+            if (challenge->connected == qfalse) {
+                if (sv_onlyVisibleClients->integer != 0) {
+                    NET_OutOfBandPrint(NS_SERVER, challenge->address,
+                                       "challengeResponse %i %i",
+                                       challenge->challengeNumber,
+                                       sv_onlyVisibleClients->integer);
+                } else {
+                    NET_OutOfBandPrint(NS_SERVER, challenge->address,
+                                       "challengeResponse %i",
+                                       challenge->challengeNumber);
+                }
+            }
+            return;
+        }
         if (reason == NULL || reason[0] == '\0') {
             NET_OutOfBandPrint(NS_SERVER, challenge->address,
                                "error\nEXE_ERR_CDKEY_IN_USE");

@@ -1,4 +1,5 @@
 #include "server_connect.h"
+#include "coduomp_plugins.h"
 
 #include "qcommon/game_module_abi_types.h"
 #include "qcommon/info.h"
@@ -38,6 +39,68 @@ extern vm_t *sv_gameVM;
 void Com_DPrintf(const char *format, ...);
 void Com_Printf(const char *format, ...);
 qboolean Sys_IsLANAddress(netadr_t address);
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only local-testing GUID switch. */
+extern cvar_t *sv_localGuid;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only address-derived GUID
+ * switch. */
+extern cvar_t *sv_ipGuid;
+
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: with sv_localGuid set, a client that
+ * received no authorized GUID and connects from a loopback or LAN address gets
+ * a fixed GUID derived from its color-stripped userinfo name (32-bit FNV-1a,
+ * limited to 1..0x7fffffff). The same name always yields the same GUID, so
+ * local test clients keep their identity across reconnects. Returns 0 when the
+ * switch is off, for test clients, and for any other address. */
+static int32_t coduomp_sv_local_guid(netadr_t from, const char *userinfo)
+{
+    char name[MAX_NAME_LENGTH];
+    uint32_t hash = 2166136261u;
+
+    if (sv_localGuid->integer == 0 || from.type == NA_BAD ||
+        (from.type != NA_LOOPBACK && Sys_IsLANAddress(from) == qfalse)) {
+        return 0;
+    }
+
+    Q_strncpyz(name, Info_ValueForKey(userinfo, "name"), sizeof(name));
+    Q_CleanStr(name);
+    for (const unsigned char *character = (const unsigned char *)name;
+         *character != '\0';
+         ++character) {
+        hash ^= *character;
+        hash *= 16777619u;
+    }
+    hash &= 0x7fffffffu;
+    return hash != 0 ? (int32_t)hash : 1;
+}
+
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: with sv_ipGuid set, a client that received
+ * no authorized or local GUID and connects over IPv4 gets a fixed GUID derived
+ * from its four address bytes (32-bit FNV-1a over an "ip" tag and the bytes,
+ * limited to 1..0x7fffffff). LAN and loopback IPv4 addresses are included; the
+ * caller consults sv_localGuid first. The source port is excluded because it
+ * changes between launches. Returns 0 when the switch is off and for
+ * test-client, internal-loopback, and non-IPv4 addresses. */
+static int32_t coduomp_sv_ip_guid(netadr_t from)
+{
+    static const unsigned char tag[] = { 'i', 'p' };
+    uint32_t hash = 2166136261u;
+
+    if (sv_ipGuid->integer == 0 || from.type != NA_IP) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < sizeof(tag); ++i) {
+        hash ^= tag[i];
+        hash *= 16777619u;
+    }
+    for (size_t i = 0; i < sizeof(from.ip); ++i) {
+        hash ^= from.ip[i];
+        hash *= 16777619u;
+    }
+    hash &= 0x7fffffffu;
+    return hash != 0 ? (int32_t)hash : 1;
+}
+
 /*
  * Complete direct-connect transaction shared by both server engines:
  *
@@ -215,6 +278,24 @@ void SV_DirectConnect(netadr_t from)
     client->gentity = SV_GentityNum(clientNum);
     client->scriptId = Scr_AllocArray();
     client->challenge = challengeNumber;
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: optional fixed GUID for local
+     * testing. */
+    if (guid == 0) {
+        guid = coduomp_sv_local_guid(from, userinfo);
+        if (guid != 0) {
+            Com_Printf("Assigned local GUID %i to %s\n", guid,
+                       Info_ValueForKey(userinfo, "name"));
+        }
+    }
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: optional address-derived GUID for
+     * clients left without an authorized or local GUID. */
+    if (guid == 0) {
+        guid = coduomp_sv_ip_guid(from);
+        if (guid != 0) {
+            Com_Printf("Assigned IP GUID %i to %s\n", guid,
+                       Info_ValueForKey(userinfo, "name"));
+        }
+    }
     client->guid = guid;
     Netchan_Setup(NS_SERVER, &client->netchan, from, qport);
     Q_strncpyz(client->userinfo, userinfo, sizeof(client->userinfo));
@@ -242,6 +323,9 @@ void SV_DirectConnect(netadr_t from)
     client->lastConnectTime = svs.realTime;
     client->nextSnapshotTime = svs.realTime;
     client->gamestateMessageNum = -1;
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: clientNum is reused as a loop counter
+     * below, so the accepted slot is taken from the client record. */
+    coduomp_plugins_on_client_connected((int32_t)(client - svs.clients));
 
     int32_t connectedCount = 0;
     for (clientNum = 0;

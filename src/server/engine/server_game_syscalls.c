@@ -1,7 +1,9 @@
 #include "server_game_syscalls.h"
 
+#include "coduomp_geoip.h"
 #include "collision/collision_area.h"
 #include "compat/coduo_x87emu.h"
+#include "filesystem/filesystem.h"
 #include "qcommon/q_bits.h"
 #include "server_game_bridge.h"
 #include "server_game_lifecycle.h"
@@ -298,6 +300,12 @@ intptr_t SV_GameSystemCalls(intptr_t *arguments)
         return (intptr_t)server_compat_surface_type_to_name(SV_INT(1));
     case SYSCALL_ADD_TEST_CLIENT:
         return SV_AddTestClient();
+    case SYSCALL_CODUOMP_ADD_NAMED_TEST_CLIENT:
+        return coduomp_sv_add_named_test_client(SV_STRING(1));
+    case SYSCALL_CODUOMP_FS_REMOVE:
+        return coduomp_fs_game_remove(SV_STRING(1));
+    case SYSCALL_CODUOMP_GET_CLIENT_COUNTRY_INDEX:
+        return coduomp_sv_client_country_index(SV_INT(1));
     case SYSCALL_GET_ARCHIVED_CLIENT_INFO: {
         const int32_t clientNum = SV_INT(1);
         /* NOT_FROM_ORIGINAL_SOURCE: preserve this recovered boundary's validated input, state, and compatibility invariants. */

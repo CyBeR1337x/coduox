@@ -131,6 +131,39 @@ void FS_Remove(const char *osPath)
     (void)remove(osPath);
 }
 
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: removes qpath from the current game
+ * directory below the writable fs_homepath state root, the same location
+ * FS_FOpenFileWrite creates. The path must be safe and relative, and package
+ * or native-module names (.pk3, .so, .dll, .dylib, .exe) are refused so game
+ * scripts cannot remove installed content or code. Returns qtrue only when the
+ * host removal succeeded. */
+qboolean coduomp_fs_game_remove(const char *qpath)
+{
+    static const char *const protectedSuffixes[] = {
+        ".pk3", ".so", ".dll", ".dylib", ".exe"
+    };
+
+    if (coduo_compat_path_is_safe_relative(qpath) == qfalse)
+        return qfalse;
+
+    const size_t pathLength = strlen(qpath);
+    for (size_t index = 0;
+         index < sizeof(protectedSuffixes) / sizeof(protectedSuffixes[0]);
+         ++index) {
+        const size_t suffixLength = strlen(protectedSuffixes[index]);
+        if (pathLength >= suffixLength &&
+            Q_stricmp(qpath + pathLength - suffixLength,
+                      protectedSuffixes[index]) == 0) {
+            return qfalse;
+        }
+    }
+
+    char osPath[MAX_OSPATH];
+    FS_BuildOSPath(filesystem_compat_state_root(fs_homepath->string),
+                   fs_currentGameDir, qpath, osPath);
+    return remove(osPath) == 0 ? qtrue : qfalse;
+}
+
 /* Source: CoDUOMP.exe 0x0042cf60..0x0042cfdf. Name and root-path behavior:
  * exact same-module Mac symbol FS_FileExists; Linux agrees. */
 qboolean FS_FileExists(const char *qpath)

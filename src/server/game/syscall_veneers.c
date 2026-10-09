@@ -957,6 +957,37 @@ gentity_t *trap_AddTestClient(void)
     return &level.gentities[entityNum];
 }
 
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: named test-client veneer with the same
+ * result mapping as trap_AddTestClient. Only this project's engines implement
+ * the syscall; the retail engines reject it as a bad game system trap. */
+gentity_t *coduomp_trap_AddNamedTestClient(const char *name)
+{
+    const int entityNum =
+        (int)TrapCall(SYSCALL_CODUOMP_ADD_NAMED_TEST_CLIENT, name);
+
+    if (entityNum < 0) {
+        return NULL;
+    }
+
+    return &level.gentities[entityNum];
+}
+
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: file-removal veneer. Only this project's
+ * engines implement the syscall; the retail engines reject it as a bad game
+ * system trap. */
+qboolean coduomp_trap_FS_Remove(const char *path)
+{
+    return TrapCall(SYSCALL_CODUOMP_FS_REMOVE, path) != 0 ? qtrue : qfalse;
+}
+
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: client country-index veneer. Only this
+ * project's engines implement the syscall; the retail engines reject it as a
+ * bad game system trap. */
+int coduomp_trap_GetClientCountryIndex(int clientNum)
+{
+    return (int)TrapCall(SYSCALL_CODUOMP_GET_CLIENT_COUNTRY_INDEX, clientNum);
+}
+
 /* Original trap veneer; host callback adaptation is documented above. */
 /* VERIFIED_DECOMPILER(0x28a44, 28a44_trap_SetArchive.c, VERIFY-SYSCALL-VENEERS-CVARCONFIG-2026-06-17): DATAFLOW_VERIFIED - PLT thunk checked; body 8479e_trap_SetArchive.c passes syscall 73 and enabled. */
 void trap_SetArchive(qboolean enabled)

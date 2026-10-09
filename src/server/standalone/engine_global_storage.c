@@ -301,6 +301,17 @@ int32_t sv_gameClientSize;
 vm_t *sv_gameVM;
 char sv_gametypeNormalizeBuffer[MAX_QPATH];
 cvar_t *sv_maxRate;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only test-client ping
+ * presentation. */
+cvar_t *sv_botRandomPing;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only local-testing GUID switch. */
+cvar_t *sv_localGuid;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only address-derived GUID
+ * switch. */
+cvar_t *sv_ipGuid;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only admission of clients denied by
+ * the CD-key authorize server. */
+cvar_t *sv_cracked;
 cvar_t *sv_maxclients;
 cvar_t *sv_padPackets;
 int sv_reconnectSequence;

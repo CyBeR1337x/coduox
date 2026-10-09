@@ -15,6 +15,9 @@ void SV_SetExpectedHunkUsage(const char *mapBspPath);
 void SV_ClearServer(void);
 void SV_InitCvar(void);
 void SV_SpawnServer(const char *serverName);
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: drops and frees every test client while
+ * the outgoing game module is loaded; reason labels the console report. */
+void coduomp_sv_drop_all_test_clients(const char *reason);
 
 #ifdef __cplusplus
 }

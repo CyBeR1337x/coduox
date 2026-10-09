@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/coduomp-icon-master.png" alt="Blue star logo" width="280">
+  <img src="assets/coduox-icon-master.png" alt="CodUOXLogo" width="280">
 </p>
 
 <h1 align="center">Open CoD:UO</h1>
@@ -13,6 +13,35 @@ not contain game data, binaries, private binary-analysis records, generated
 decompiler output, or recovery ledgers.
 
 See [the changelog](CHANGELOG.md) for a concise list of user-visible differences from the stock game.
+
+## About this fork
+
+coduox is a fork of [opencoduo/coduomp](https://github.com/opencoduo/coduomp).
+The reconstruction of the game, the client, and the dedicated server is the
+work of that project. This fork follows its `stock` and `master` branches and
+adds dedicated-server features on top of `master`: server plugins, extra
+script functions and player methods, and extra server settings.
+
+[Changes from coduomp](CHANGELOG.md#changes-from-coduomp) lists every
+addition. For the original project, its history, and anything not specific to
+this fork, go to [opencoduo/coduomp](https://github.com/opencoduo/coduomp).
+
+Prebuilt 64-bit Linux dedicated-server packages are on the
+[releases page](https://github.com/CyBeR1337x/coduox/releases); see
+[release packages](docs/server-building.md#release-packages).
+
+### Credits
+
+- [opencoduo/coduomp](https://github.com/opencoduo/coduomp): the project
+  this fork is built on.
+- [CoD4x](https://github.com/callofduty4x/CoD4x_Server): the plugin
+  interface, the `fs_*` file functions, `kick`, `getGeoLocation`, and
+  `getPlayerAngles` are modelled on their CoD4x counterparts.
+- [iw1x](https://github.com/cod1raph/iw1x-server-r): `sv_cracked` and the
+  `g_gametype_color` and `mapname_color` settings follow the iw1x server.
+- [CoD4X MySQL plugin](https://github.com/callofduty4x/mysql) by Sharpienero,
+  MichaelHillcox and T-Max: the base of the
+  [coduox-mysql](https://github.com/CyBeR1337x/coduox-mysql) plugin.
 
 ## Branches
 
@@ -301,6 +330,20 @@ set g_allowGlobalChat 0
 The setting can be changed while the server is running. It affects only player
 general chat; team, squad, private, scripted, and server-console messages remain
 available. Set `g_allowGlobalChat 1` to enable general chat again.
+
+Players block each other's movement by default. To let teammates walk through
+each other while enemies still block, set:
+
+```cfg
+set g_playerCollision 2
+```
+
+`0` turns off collision between all players, and `1` restores the default. The
+setting can be changed while the server is running and affects only movement:
+shots, melee, and explosives still hit every player. Free-for-all game types
+have no teammates, so `2` behaves like `1` there. Players' clients still
+predict the stop, so walking into a player they can pass briefly stalls and
+then snaps through.
 
 ## Status
 

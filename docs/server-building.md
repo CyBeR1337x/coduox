@@ -145,3 +145,33 @@ requires a Linux toolchain with i386 support.
 
 Build products are intentionally ignored. Clean them with ordinary non-forced
 file deletion or by removing the generated build directories manually.
+
+## Release Packages
+
+The `server` workflow in `.github/workflows/server.yml` builds the 64-bit
+Linux dedicated server on every push to `master` and every pull request. It
+runs `make policy-check` and `make server64` in a Debian 12 container, once
+with `AUTH=0` and once with `AUTH=1`, and keeps both packages as workflow
+artifacts.
+
+Pushing a tag that starts with `v`, such as `v1.0`, also publishes a release
+with both packages attached:
+
+```text
+coduox-server-linux-x86_64-<tag>.tar.gz        CD-key authorization disabled
+coduox-server-linux-x86_64-auth-<tag>.tar.gz   CD-key authorization enabled
+```
+
+Each package holds the stripped server executable, `uo/game.mp.uo.x86_64.so`,
+a `README.txt`, the source commit in `BUILDINFO.txt`, and `SHA256SUMS.txt`.
+Copy its contents into the root of an existing game installation.
+
+To build a package locally from an existing build:
+
+```sh
+make server64 AUTH=0
+tools/linux/package-server.sh \
+    .workbench/build/server/linux-x86_64-noauth/coduo_lnxded_recovered \
+    .workbench/build/game/linux-x86_64/game.mp.uo.x86_64.so \
+    .workbench/packages/coduox-server.tar.gz x86_64 0 local "$(git rev-parse HEAD)"
+```

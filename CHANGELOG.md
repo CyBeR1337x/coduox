@@ -1,5 +1,40 @@
 # Changelog
 
+## Changes from coduomp
+
+coduox is a fork of [opencoduo/coduomp](https://github.com/opencoduo/coduomp). This section lists what the fork adds to that project's dedicated server; everything under [Changes from stock](#changes-from-stock) comes from coduomp. Each addition is described in [the dedicated engine notes](docs/dedicated-engine.md).
+
+Several additions are modelled on [CoD4x](https://github.com/callofduty4x/CoD4x_Server) and [iw1x](https://github.com/cod1raph/iw1x-server-r); see [Credits](README.md#credits).
+
+### Plugins
+
+- `loadplugin <name>` loads `plugins/<name>.so` on demand to add console commands and script functions without rebuilding the server, and `plugins` lists what is loaded. See [server plugins](docs/server-plugins.md).
+- The [coduox-mysql](https://github.com/CyBeR1337x/coduox-mysql) plugin gives scripts MySQL and MariaDB access. It is a separate project.
+
+### Script functions and methods
+
+- Scripts can run server console commands with `execCommand(command)`, for example `execCommand("say Round starts in 10 seconds")`.
+- Scripts can read and write files with `fs_testfile`, `fs_fopen` (`read`, `write`, `append`), `fs_readline`, `fs_writeline`, `fs_remove`, `fs_fclose` and `fs_fcloseall` functions.
+- Scripts can store values per player with `self setKey(key, value)`, `self getKey(key)` and `self deleteKey(key)`; values for players with a GUID are saved on the server and return on their next visit.
+- Scripts can look up a player's country with `self getGeoLocation(type)` (country code, three-letter code, name, continent, or index). The server needs a GeoIP legacy country `GeoIP.dat` in `main` or the `fs_game` folder.
+- Scripts can read a player's view angles with `self getPlayerAngles()`.
+- Scripts can kick clients with `kick(clientnum, [reason])`. Kicked bots free their slot again instead of staying listed as `ZMBI` until the server restarts.
+- Scripts can name bots: `addtestclient("name")` connects a test client with the given name, while `addtestclient()` keeps the generated `botN` names.
+
+### Server settings
+
+- **Player collision:** `set g_playerCollision 2` lets teammates walk through each other while enemies still block; `0` turns off collision between all players. `1`, the default, keeps stock collision. Only movement is affected, so shots, melee and explosives still hit every player. Clients without this change briefly stop and then snap through when walking into a player they can pass.
+- **CD-key authorization:** `set sv_cracked 1` lets players whose CD key the authorize server denies join a server built with authorization. They join without a GUID; players with a valid key are unaffected. `0` is the default.
+- **IP-based GUIDs:** `set sv_ipGuid 1` gives players without a CD-key or local GUID a fixed GUID made from their IPv4 address, so GUID bans and saved per-player values work for them. Players sharing an address share the GUID. `0` is the default.
+- **Local testing:** `set sv_localGuid 1` gives LAN and local players without a CD-key GUID a fixed GUID based on their name.
+- **Server browser colors:** `g_gametype_color` and `mapname_color` (one digit `0`-`7`) color the game type and map name shown in server browsers; empty by default.
+- **Bot pings:** a positive `sv_botRandomPing` reports randomized pings for bots; `0`, the default, keeps their measured pings.
+
+### Server behavior
+
+- Bots are removed when a map loads or restarts (`map`, `map_rotate`, `map_restart`) instead of staying stuck as `CNCT` or being added twice by gametype scripts.
+- The dedicated server's startup banner shows the date it was compiled.
+
 ## Changes from stock
 
 This is a feature-oriented summary of lasting, user-visible differences from the stock Call of Duty: United Offensive 1.51 multiplayer client and dedicated server. Silent security hardening, source-recovery work, build plumbing, and fixes that only restore stock behavior are intentionally omitted.

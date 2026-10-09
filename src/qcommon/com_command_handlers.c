@@ -1,5 +1,6 @@
 #include "com_command_handlers.h"
 #include "com_command_services.h"
+#include "server/engine/coduomp_plugins.h"
 
 #include "compat/crt/atof_compat.h"
 #include "compat/coduo_int32_bits.h"
@@ -40,6 +41,9 @@ _Noreturn void Com_Quit_f(void)
     Com_ClearTempMemory();
     COM_QUIT_TARGET_CLEANUP();
     SV_Shutdown("EXE_SERVERQUIT");
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: plugins close their resources while
+     * the console and filesystem are still up. */
+    coduomp_plugins_terminate();
     Hunk_Clear();
     Com_Close();
     FS_Shutdown(qtrue);

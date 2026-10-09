@@ -2,6 +2,7 @@
 
 #include "qcommon/qcommon_runtime_types.h"
 #include "server_client_message.h"
+#include "math/q_math.h"
 
 #include <stdint.h>
 
@@ -17,6 +18,15 @@ extern cvar_t *sv_timeout;
 extern cvar_t *sv_zombietime;
 extern cvar_t *cl_paused;
 extern cvar_t *sv_paused;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only test-client ping
+ * presentation. */
+extern cvar_t *sv_botRandomPing;
+
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: base pings reported for test clients while
+ * sv_botRandomPing is positive; each report adds -15..15 ms. */
+static const int16_t coduomp_bot_random_pings[] = {
+    83, 115, 61, 146, 164, 37, 43, 141, 99, 152, 113, 92, 48, 54, 134
+};
 
 void Com_DPrintf(const char *format, ...);
 /*
@@ -42,6 +52,17 @@ void SV_CalcPings(void)
     for (int32_t clientNum = 0;
          clientNum < sv_maxclients->integer;
          ++clientNum, ++client) {
+        /* NOT_FROM_ORIGINAL_SOURCE: coduox: with sv_botRandomPing positive,
+         * test clients report a new random ping each frame instead of the
+         * measured value. irand excludes its upper bound. */
+        if (client->isTestClient && sv_botRandomPing->integer > 0) {
+            const int32_t pingIndex = irand(
+                0, (int32_t)(sizeof(coduomp_bot_random_pings) /
+                             sizeof(coduomp_bot_random_pings[0])));
+            client->ping =
+                coduomp_bot_random_pings[pingIndex] + irand(-15, 16);
+            continue;
+        }
         if (client->state != CS_ACTIVE || client->gentity == NULL) {
             client->ping = SERVER_MAX_PING;
             continue;
@@ -90,8 +111,19 @@ void SV_CheckTimeouts(void)
         if (client->lastPacketTime > svs.realTime)
             client->lastPacketTime = svs.realTime;
 
-        if (client->isTestClient != qfalse)
+        if (client->isTestClient != qfalse) {
+            /* NOT_FROM_ORIGINAL_SOURCE: coduox: a dropped test client leaves
+             * CS_ZOMBIE under the same sv_zombietime rule as other clients.
+             * Its unique address is never reconnected, so otherwise the slot
+             * stays unusable until the server restarts. */
+            if (client->state == CS_ZOMBIE &&
+                client->lastPacketTime < zombieLimit) {
+                Com_DPrintf("Going from CS_ZOMBIE to CS_FREE for %s\n",
+                            client->name);
+                client->state = CS_FREE;
+            }
             continue;
+        }
 
         if (client->state == CS_ZOMBIE &&
             client->lastPacketTime < zombieLimit) {

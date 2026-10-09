@@ -39,9 +39,11 @@ typedef enum game_command_e {
     GAME_GET_FOG_OPAQUE_DIST_SQ_BITS = 23
 } game_command_t;
 
-/* Values 141..199 are deliberately unassigned and dispatch to the bad-trap
- * path.  The 200..211 libc/math services exist in both engines; the game
- * module normally calls its linked libc equivalents instead. */
+/* Values 141..143 are NOT_FROM_ORIGINAL_SOURCE extensions absent from the
+ * retail engines, so a module uses them only for behavior the original
+ * syscalls cannot express.  Values 144..199 are deliberately unassigned and
+ * dispatch to the bad-trap path.  The 200..211 libc/math services exist in both engines; the
+ * game module normally calls its linked libc equivalents instead. */
 typedef enum game_syscall_id_e {
     SYSCALL_PRINTF = 0,
     SYSCALL_ERROR = 1,
@@ -183,6 +185,16 @@ typedef enum game_syscall_id_e {
     SYSCALL_FREE_WEAPON_INFO_MEMORY = 138,
     SYSCALL_FREE_CLIENT_SCRIPT_PERS = 139,
     SYSCALL_RESET_ENTITY_PARSE_POINT = 140,
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: SYSCALL_ADD_TEST_CLIENT with a
+     * caller-supplied name; arguments and result otherwise match syscall
+     * 69. */
+    SYSCALL_CODUOMP_ADD_NAMED_TEST_CLIENT = 141,
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: (path) removes a writable
+     * game-directory file; returns nonzero on success. */
+    SYSCALL_CODUOMP_FS_REMOVE = 142,
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: (clientNum) returns the client's GeoIP
+     * country index, or 0 when it is unknown. */
+    SYSCALL_CODUOMP_GET_CLIENT_COUNTRY_INDEX = 143,
 
     SYSCALL_MEMSET = 200,
     SYSCALL_MEMCPY = 201,

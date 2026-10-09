@@ -14,6 +14,7 @@
 #include "game_globals.h"
 #include "game_functions.h"
 #include "scr_vm.h"
+#include "coduomp_player_data.h"
 
 #define CLIENT_ARCHIVE_NONE -1
 /* GENTITY_OFFSET_* replaced by struct field access:
@@ -276,6 +277,10 @@ void ClientDisconnect(int clientNum)
 {
     gclient_t *client = &level.clients[clientNum];
     gentity_t *ent = &g_entities[clientNum];
+
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: the slot's key/value store belongs to
+     * the departing player. */
+    coduomp_player_data_clear(clientNum);
 
     Scr_AddString(DISCONNECT_REASON);
     Scr_AddString(DISCONNECT_MENU_RESPONSE_VALUE);

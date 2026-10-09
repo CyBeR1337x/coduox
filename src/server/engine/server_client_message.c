@@ -1,4 +1,5 @@
 #include "server_client_message.h"
+#include "coduomp_plugins.h"
 
 #include "qcommon/com_sprintf.h"
 #include "filesystem/filesystem.h"
@@ -117,6 +118,9 @@ void SV_DropClient(client_t *client, const char *dropReason)
     }
 
     client->deferredDropReason = NULL;
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: plugins see the client before its
+     * record is released. */
+    coduomp_plugins_on_client_disconnected((int32_t)(client - svs.clients));
 
     char name[SERVER_DROP_NAME_BUFFER_SIZE];
     strcpy(name, client->name);
@@ -611,7 +615,37 @@ void SV_ExecuteClientMessage(client_t *client, msg_t *message)
     }
 }
 
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: copies a caller-supplied test-client name
+ * into the quoted connect userinfo. Control bytes and the backslash,
+ * double-quote, and semicolon delimiters are dropped so the name remains
+ * exactly one info value; the result is truncated to MAX_NAME_LENGTH - 1 bytes
+ * and is empty when no usable byte remains. The game module applies its normal
+ * name cleaning after connect. */
+static void coduomp_sv_copy_test_client_name(char *destination,
+                                             const char *name)
+{
+    size_t length = 0;
+
+    for (; *name != '\0' && length < MAX_NAME_LENGTH - 1; ++name) {
+        const unsigned char character = (unsigned char)*name;
+        if (character < ' ' || character == 0x7f || character == '\\' ||
+            character == '"' || character == ';') {
+            continue;
+        }
+        destination[length++] = (char)character;
+    }
+    destination[length] = '\0';
+}
+
 int32_t SV_AddTestClient(void)
+{
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: the original body is shared with the
+     * named variant below; a NULL name reproduces the original connect
+     * string. */
+    return coduomp_sv_add_named_test_client(NULL);
+}
+
+int32_t coduomp_sv_add_named_test_client(const char *name)
 {
     int32_t clientNum;
     client_t *client = svs.clients;
@@ -626,13 +660,26 @@ int32_t SV_AddTestClient(void)
         return SERVER_TEST_CLIENT_NONE;
     }
 
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: a usable caller name replaces the
+     * generated "bot<sequence>" name; the sequence still advances for the
+     * address. */
+    char connectName[MAX_NAME_LENGTH];
+    connectName[0] = '\0';
+    if (name != NULL) {
+        coduomp_sv_copy_test_client_name(connectName, name);
+    }
+    if (connectName[0] == '\0') {
+        Com_sprintf(connectName, sizeof(connectName), "bot%d",
+                    sv_reconnectSequence);
+    }
+
     char connectCommand[SERVER_TEST_CLIENT_CONNECT_BUFFER_SIZE];
     sprintf(connectCommand,
             "connect \"\\cl_guid\\unknown\\cg_predictItems\\1"
             "\\cl_punkbuster\\0\\cl_anonymous\\0\\handicap\\100"
             "\\color\\4\\head\\default\\model\\multi\\snaps\\20"
-            "\\rate\\5000\\name\\bot%d\\protocol\\%d\"",
-            sv_reconnectSequence, SERVER_PROTOCOL_VERSION);
+            "\\rate\\5000\\name\\%s\\protocol\\%d\"",
+            connectName, SERVER_PROTOCOL_VERSION);
     Cmd_TokenizeString(connectCommand);
 
     netadr_t address;
@@ -662,5 +709,7 @@ int32_t SV_AddTestClient(void)
     usercmd_t command;
     memset(&command, 0, sizeof(command));
     SV_ClientEnterWorld(client, &command);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: report each added test client. */
+    Com_Printf("Added bot %i:%s^7\n", clientNum, client->name);
     return clientNum;
 }

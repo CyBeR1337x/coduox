@@ -192,6 +192,9 @@ extern void trap_SendServerCommand(int clientNum, int reliable, const char *comm
 extern void trap_SendConsoleCommand(int executionTime, const char *text);
 extern void trap_DropClient(int clientNum, const char *reason);
 extern gentity_t *trap_AddTestClient(void);
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: trap_AddTestClient with a userinfo
+ * name. */
+extern gentity_t *coduomp_trap_AddNamedTestClient(const char *name);
 extern void trap_SetArchive(qboolean enabled);
 
 /* Filesystem */
@@ -199,6 +202,12 @@ extern int trap_FS_FOpenFile(const char *path, int *handle, fsMode_t mode);
 extern void trap_FS_FCloseFile(int handle);
 extern void trap_FS_Read(void *buffer, int length, int handle);
 extern void trap_FS_Write(const void *buffer, int length, int handle);
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: removes a writable game-directory file;
+ * returns qtrue on success. Only this project's engines implement it. */
+extern qboolean coduomp_trap_FS_Remove(const char *path);
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: GeoIP country index of a client, 0 when
+ * unknown. Only this project's engines implement it. */
+extern int coduomp_trap_GetClientCountryIndex(int clientNum);
 extern void trap_FS_Rename(const char *from, const char *to);
 extern int trap_FS_GetFileList(const char *path, const char *extension,
                                char *listBuffer, int bufferSize);

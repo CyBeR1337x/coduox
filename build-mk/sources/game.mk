@@ -9,6 +9,10 @@ GAME_C_SOURCES := \
 	src/server/game/client_lifecycle.c \
 	src/server/game/client_think.c \
 	src/server/game/client_transform.c \
+	src/server/game/coduomp_player_collision.c \
+	src/server/game/coduomp_player_data.c \
+	src/server/game/coduomp_player_geolocation.c \
+	src/server/game/coduomp_script_files.c \
 	src/server/game/common_math.c \
 	src/server/game/damage_system.c \
 	src/server/game/damage.c \

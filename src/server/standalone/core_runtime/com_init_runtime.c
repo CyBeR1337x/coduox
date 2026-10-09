@@ -41,7 +41,11 @@
 #else
 #define COM_INIT_PLATFORM "linux-" COM_INIT_ARCH
 #endif
-#define COM_INIT_BUILD_DATE "Jul 01 2026"
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: the compile date of this file;
+ * build-mk/server.mk recompiles it on every build so the banner matches the
+ * build. */
+#define COM_INIT_BUILD_DATE __DATE__
+#define COM_INIT_BUILD_MARK "coduox"
 #define COM_INIT_VERSION_STRING "1.51"
 #define COM_INIT_PRODUCT_STRING "CoD:UO Recovered Dedicated Engine"
 #define COM_INIT_SAFE_MODE_CONFIG "exec safemode_mp_server.cfg\n"
@@ -75,8 +79,9 @@ int32_t com_frameTime;
 
 void Com_Init(char *commandLine)
 {
-    Com_Printf("%s %s (%s) build %s\n", COM_INIT_PRODUCT_STRING,
-               COM_INIT_VERSION_STRING, COM_INIT_PLATFORM, COM_INIT_BUILD_DATE);
+    Com_Printf("%s %s (%s) build %s - %s\n", COM_INIT_PRODUCT_STRING,
+               COM_INIT_VERSION_STRING, COM_INIT_PLATFORM, COM_INIT_BUILD_DATE,
+               COM_INIT_BUILD_MARK);
 
     if (CODUO_SETJMP(com_frameAbortContext, COM_INIT_LONGJMP_SAVE_MASK) != 0) {
         Com_ErrorCleanup();

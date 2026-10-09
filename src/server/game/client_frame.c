@@ -15,6 +15,7 @@
 #include "scr_vm.h"
 #include "g_syscalls.h"
 #include "game_functions.h"
+#include "coduomp_player_collision.h"
 #include "compat/coduo_x87emu.h" /* defines EMULATE_X87; x87 shim when it is 1 */
 #include "compat/coduo_native_x87.h"
 #include "compat/libm/coduo_libm.h"
@@ -1247,7 +1248,10 @@ qboolean StuckInClient(gentity_t *ent)
             game_compat_stuck_client_contents(other) == 0 ||
             (other->s.eFlags & STUCK_ENTITY_SKIP_FLAG) != 0 ||
             game_compat_stuck_bounds_overlap(ent, other) == 0 ||
-            game_compat_stuck_shapes_overlap(ent, other) == 0) {
+            game_compat_stuck_shapes_overlap(ent, other) == 0 ||
+            /* NOT_FROM_ORIGINAL_SOURCE: coduox: players allowed to overlap by
+             * g_playerCollision are not pushed apart. */
+            coduomp_player_collision_ignored(ent, other) != 0) {
             continue;
         }
 

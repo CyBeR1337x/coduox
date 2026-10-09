@@ -14,6 +14,7 @@
 #include "game_globals.h"
 #include "g_syscalls.h"
 #include "game_functions.h"
+#include "coduomp_player_collision.h"
 #include "compat/coduo_x87emu.h" /* defines EMULATE_X87; x87 shim when it is 1 */
 #include "compat/libm/coduo_libm.h"
 
@@ -461,7 +462,17 @@ void ClientThink_real(gentity_t *ent, usercmd_t *command)
         client->weaponRecoilState = weaponContext.weaponRecoilState;
         client->spectatorSnapshotAngle0 = muzzleAngles[0];
         client->spectatorSnapshotAngle1 = muzzleAngles[1];
-        Pmove(&pm);
+        {
+            /* NOT_FROM_ORIGINAL_SOURCE: coduox: players that g_playerCollision
+             * lets this client pass are non-solid only for this Pmove. */
+            int collisionSuspended[CODUOMP_PLAYER_COLLISION_MAX_SUSPENDED];
+            int collisionSuspendedCount =
+                coduomp_player_collision_suspend(ent, collisionSuspended);
+
+            Pmove(&pm);
+            coduomp_player_collision_restore(collisionSuspended,
+                                             collisionSuspendedCount);
+        }
         if (vehicleUnlinkedForPmove != NULL) {
             trap_LinkEntity(vehicleUnlinkedForPmove);
         }

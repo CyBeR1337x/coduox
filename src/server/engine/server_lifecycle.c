@@ -18,6 +18,17 @@
 
 enum { SV_FINAL_MESSAGE_PASSES = 2 };
 
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only test-client ping
+ * presentation. */
+extern cvar_t *sv_botRandomPing;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only local-testing GUID switch. */
+extern cvar_t *sv_localGuid;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only address-derived GUID
+ * switch. */
+extern cvar_t *sv_ipGuid;
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: master-only admission of clients denied by
+ * the CD-key authorize server. */
+extern cvar_t *sv_cracked;
 extern serverStatic_t svs;
 extern cvar_t *sv_running;
 extern cvar_t *g_gametype;
@@ -92,6 +103,26 @@ void SV_Init(void)
     (void)Cvar_Get("protocol", protocol, CVAR_ROM | CVAR_SERVERINFO);
     (void)Cvar_Set2("protocol", protocol, qtrue);
 
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: a positive value reports randomized
+     * test-client pings; zero (the default) keeps measured pings. */
+    sv_botRandomPing = Cvar_Get("sv_botRandomPing", "0", CVAR_ARCHIVE);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: a nonzero value gives unauthorized LAN
+     * and loopback clients a fixed name-derived GUID; zero (the default) keeps
+     * their GUID at 0. */
+    sv_localGuid = Cvar_Get("sv_localGuid", "0", CVAR_ARCHIVE);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: a nonzero value gives IPv4 clients
+     * left without an authorized or local GUID a fixed GUID derived from their
+     * address; zero (the default) keeps their GUID at 0. */
+    sv_ipGuid = Cvar_Get("sv_ipGuid", "0", CVAR_ARCHIVE);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: a nonzero value admits clients whose
+     * CD key the authorize server denies, without a GUID; zero (the default)
+     * keeps the stock rejection. */
+    sv_cracked = Cvar_Get("sv_cracked", "0", CVAR_ARCHIVE);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: one digit 0..7 colors the game type or
+     * map name in server-browser info replies; empty (the default) leaves them
+     * unchanged. */
+    (void)Cvar_Get("g_gametype_color", "", CVAR_ARCHIVE);
+    (void)Cvar_Get("mapname_color", "", CVAR_ARCHIVE);
     sv_mapname = Cvar_Get("mapname", "nomap", CVAR_ROM | CVAR_SERVERINFO);
     sv_privateClients = Cvar_Get("sv_privateClients", "0", CVAR_SERVERINFO);
     sv_hostname = Cvar_Get("sv_hostname", "CoDHost",

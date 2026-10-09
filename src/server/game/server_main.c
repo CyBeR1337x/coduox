@@ -18,6 +18,8 @@
 #include "game_functions.h"
 #include "scr_vm.h"
 #include "level_locals.h"
+#include "coduomp_script_files.h"
+#include "coduomp_player_data.h"
 
 /*
  * Global syscall function pointer.
@@ -297,6 +299,11 @@ void G_RegisterCvars(void)
      * voting; otherwise both game-type vote commands use this allowlist. */
     trap_Cvar_Register(&g_voteGameTypes, "g_voteGameTypes", "", CVAR_ARCHIVE);
 
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: 1 keeps stock player collision; 2 lets
+     * teammates pass through each other; 0 disables player collision. */
+    trap_Cvar_Register(&g_playerCollision, "g_playerCollision", "1",
+                       CVAR_ARCHIVE);
+
     if (Scr_IsValidGameType(g_gametype.string) == 0) {
         G_Printf("g_gametype %s is not a valid gametype, defaulting to dm\n",
                  g_gametype.string);
@@ -338,6 +345,10 @@ void G_UpdateCvars(void)
 
     /* NOT_FROM_ORIGINAL_SOURCE: allow vote policy changes without a map restart. */
     trap_Cvar_Update(&g_voteGameTypes);
+
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: allow collision policy changes
+     * mid-round. */
+    trap_Cvar_Update(&g_playerCollision);
 }
 
 /* ------------------------------------------------------------------ */
@@ -589,6 +600,13 @@ void G_ShutdownGame(int restart)
         G_LogPrintf("------------------------------------------------------------\n");
         trap_FS_FCloseFile(lvl->logFile);
     }
+
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: script file handles do not survive the
+     * scripts that opened them. */
+    coduomp_script_files_close_all();
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: key/value stores reload on next
+     * access. */
+    coduomp_player_data_clear_all();
 
     G_FreeEntities();
     HudElem_DestroyAll();

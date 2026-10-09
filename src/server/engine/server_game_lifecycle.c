@@ -1,4 +1,5 @@
 #include "server_game_lifecycle.h"
+#include "coduomp_plugins.h"
 
 #include "collision/collision_queries.h"
 #include "qcommon/com_event_queue.h"
@@ -65,6 +66,9 @@ void SV_ShutdownGameProgs(void)
     XAnimSetUser(XANIM_USER_SERVER);
     (void)VM_Call(sv_gameVM, GAME_SHUTDOWN,
                   qfalse, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: the map's scripts are gone; plugins
+     * release what they handed to them. */
+    coduomp_plugins_on_exit_level();
     Hunk_ClearToMarkLow();
     VM_Free(sv_gameVM);
     sv_gameVM = NULL;
@@ -103,6 +107,8 @@ void SV_RestartGameProgs(qboolean cvarRestartGate)
 {
     (void)VM_Call(sv_gameVM, GAME_SHUTDOWN,
                   qtrue, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: a restart ends the scripts as well. */
+    coduomp_plugins_on_exit_level();
     Hunk_ClearToMarkLow();
     SV_InitGameVM(qtrue, cvarRestartGate);
 }

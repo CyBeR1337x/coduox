@@ -339,6 +339,34 @@ void SV_InitCvar(void)
     Cvar_ClearScriptSetServerinfoFlags();
 }
 
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: drops every test client before a full map
+ * load or map_restart. Test clients send no packets, so after a full load
+ * resets clients to CS_CONNECTED nothing would return them to the game, and
+ * scripts that add bots on every map would otherwise add duplicates after a
+ * restart. Callers run this while the outgoing game module is still loaded so
+ * it sees the disconnect. EXE_DISCONNECTED is logged to the console without a
+ * player broadcast, and the slot is freed immediately so the new map's scripts
+ * can add bots again. */
+void coduomp_sv_drop_all_test_clients(const char *reason)
+{
+    int32_t droppedCount = 0;
+
+    for (int32_t clientNum = 0;
+         clientNum < sv_maxclients->integer;
+         ++clientNum) {
+        client_t *const client = &svs.clients[clientNum];
+        if (client->isTestClient == qfalse || client->state == CS_FREE) {
+            continue;
+        }
+        Com_Printf("%s: dropping bot %i:%s^7 (state %i)\n", reason,
+                   clientNum, client->name, (int32_t)client->state);
+        SV_DropClient(client, "EXE_DISCONNECTED");
+        client->state = CS_FREE;
+        ++droppedCount;
+    }
+    Com_Printf("%s: dropped %i bot(s)\n", reason, droppedCount);
+}
+
 /* Source: CoDUOMP.exe 0x0045fa30..0x004604c2 and coduo_lnxded
  * 0x08091b72..0x080921f5. The common body retains the complete map-spawn
  * lifecycle. Only the five target boundaries documented above are adapters. */
@@ -372,6 +400,9 @@ void SV_SpawnServer(const char *serverName)
                     g_gametype->string);
             }
         }
+        /* NOT_FROM_ORIGINAL_SOURCE: coduox: bots do not survive a full map
+         * load. */
+        coduomp_sv_drop_all_test_clients("Map load");
         NET_Sleep(SERVER_LOADING_RECONNECT_DELAY_MSEC);
     } else {
         restarting = qfalse;
@@ -464,6 +495,13 @@ void SV_SpawnServer(const char *serverName)
                         clientNum, client->scriptId,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             if (reject == 0) {
+                /* NOT_FROM_ORIGINAL_SOURCE: coduox: report test clients added
+                 * while this map loaded; they send no packets to rejoin. */
+                if (client->isTestClient != qfalse) {
+                    Com_Printf("Map load: bot %i:%s^7 added during load is "
+                               "reset to CNCT\n",
+                               clientNum, client->name);
+                }
                 client->state = CS_CONNECTED;
             } else {
                 SV_DropClient(client, (const char *)reject);

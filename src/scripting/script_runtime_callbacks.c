@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include "script_callbacks.h"
+#include "server/engine/coduomp_plugins.h"
 #include "script_anim.h"
 #include "script_import_fields.h"
 #include "script_memory.h"
@@ -143,8 +144,19 @@ static void *coduo_script_callback_mt_alloc(size_t size, int32_t unusedType)
 script_function_callback_t Scr_GetFunction(const char **name,
                                             int32_t *developerOnly)
 {
-    return script_exportCallbacks[SCRIPT_EXPORT_GET_FUNCTION]
-        .function_lookup(name, developerOnly);
+    script_function_callback_t function =
+        script_exportCallbacks[SCRIPT_EXPORT_GET_FUNCTION]
+            .function_lookup(name, developerOnly);
+
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: a name the game module does not
+     * provide may be a script function registered by a server plugin. */
+    if (function == NULL) {
+        function = coduomp_plugins_script_function(name);
+        if (function != NULL) {
+            *developerOnly = 0;
+        }
+    }
+    return function;
 }
 
 /* Source: CoDUOMP.exe 0x0047f960..0x0047f96b and coduo_lnxded

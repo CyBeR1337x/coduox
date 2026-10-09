@@ -1,4 +1,5 @@
 #include "server_frame.h"
+#include "coduomp_plugins.h"
 
 #include "qcommon/com_frame.h"
 #include "qcommon/com_lifecycle.h"
@@ -243,6 +244,8 @@ void SV_Frame(int32_t msec)
     }
 
     SV_RunBotFrame();
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: per-frame plugin callbacks. */
+    coduomp_plugins_on_frame();
     int32_t frameStartTime = 0;
     if (com_speeds->integer != 0) {
         frameStartTime = SERVER_FRAME_MILLISECONDS();

@@ -26,6 +26,9 @@ void SV_ClientThink(client_t *client, const usercmd_t *command);
 void SV_UserMove(client_t *client, msg_t *message, qboolean delta);
 void SV_ExecuteClientMessage(client_t *client, msg_t *message);
 int32_t SV_AddTestClient(void);
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: SV_AddTestClient with an optional userinfo
+ * name; NULL or a name with no usable bytes selects the generated bot name. */
+int32_t coduomp_sv_add_named_test_client(const char *name);
 
 #ifdef __cplusplus
 }

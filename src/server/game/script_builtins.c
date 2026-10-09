@@ -22,6 +22,7 @@
 #include "level_locals.h"
 #include "scr_vm.h"
 #include "g_syscalls.h"
+#include "coduomp_script_files.h"
 #include "bg_state.h"
 #include "compat/coduo_x87emu.h" /* defines EMULATE_X87; x87 shim when it is 1 */
 #include "compat/coduo_native_x87.h"
@@ -3816,6 +3817,46 @@ void script_func_exec(void)
         va(SCRIPT_EXEC_COMMAND_FORMAT, Scr_GetString(0)));
 }
 
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: execCommand(<command>) appends one line of
+ * text to the server command buffer, where it runs with console rights after
+ * the current server frame; ';' outside quotes separates commands as on the
+ * console. Command output is not returned. The text must be non-empty, hold no
+ * carriage return or line feed, and fit one MAX_STRING_CHARS line with its
+ * terminating newline; anything else is a script error and queues nothing.
+ * Callers own the text: player-supplied characters reach the console
+ * unchanged. */
+void coduomp_script_func_execcommand(void)
+{
+    char line[MAX_STRING_CHARS];
+    const char *command;
+    size_t commandLength;
+
+    if (Scr_GetNumParam() != 1) {
+        Scr_Error("Usage: execCommand(<command>)");
+        return;
+    }
+
+    command = Scr_GetString(0);
+    commandLength = strlen(command);
+    if (commandLength == 0) {
+        Scr_Error("execCommand: command must not be empty");
+        return;
+    }
+    if (commandLength > sizeof(line) - 2u) {
+        Scr_Error("execCommand: command is too long");
+        return;
+    }
+    if (strpbrk(command, "\r\n") != NULL) {
+        Scr_Error("execCommand: command must be a single line");
+        return;
+    }
+
+    memcpy(line, command, commandLength);
+    line[commandLength] = '\n';
+    line[commandLength + 1u] = '\0';
+    trap_SendConsoleCommand(SCRIPT_CONSOLE_COMMAND_NOW, line);
+}
+
 /* NOT_FROM_ORIGINAL_SOURCE: local helper extracted from recovered script builtin behavior (game_compat_script_exit_state_error_message). */
 static const char *game_compat_script_exit_state_error_message(int exitState)
 {
@@ -3907,11 +3948,59 @@ void GScr_RespawnDuplicate(uint32_t scriptObject)
 /* VERIFIED_DECOMPILER(0x6e47d, 7e47d_script_func_addtestclient.c, VERIFY-SCRIPT-BUILTINS-EARTHQUAKE-ADMIN-2026-06-17): DATAFLOW_VERIFIED; trap_AddTestClient call, non-null branch, Scr_AddEntity argument, and void return checked against current decompiler output. */
 void script_func_addtestclient(void)
 {
-    gentity_t *ent = trap_AddTestClient();
+    gentity_t *ent;
+
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: addtestclient(name) supplies the bot's
+     * userinfo name. Without an argument the original syscall is used, so
+     * unnamed calls keep the generated "bot<sequence>" name. */
+    if (Scr_GetNumParam() != 0) {
+        const char *name = Scr_GetString(0);
+
+        if (name[0] == '\0') {
+            Scr_Error("addtestclient: name must not be empty");
+            return;
+        }
+        ent = coduomp_trap_AddNamedTestClient(name);
+    } else {
+        ent = trap_AddTestClient();
+    }
 
     if (ent != 0) {
         Scr_AddEntity(ent);
     }
+}
+
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: kick(<clientnum>, [<reason>]) drops a
+ * connected client, as the CoD4x script function does. The reason defaults to
+ * the localized EXE_PLAYERKICKED used by the console kick command. An empty
+ * slot is ignored, and the listen-server host cannot be kicked, matching the
+ * console command. A client number outside 0..maxclients-1 is a script
+ * error. */
+void coduomp_script_func_kick(void)
+{
+    uint32_t paramCount = Scr_GetNumParam();
+    const char *reason = "EXE_PLAYERKICKED";
+    int clientNum;
+
+    if (paramCount != 1 && paramCount != 2) {
+        Scr_Error("Usage: kick(<clientnum>, [<reason>])");
+        return;
+    }
+
+    clientNum = Scr_GetInt(0);
+    if (paramCount == 2) {
+        reason = Scr_GetString(1);
+    }
+    if (clientNum < 0 || clientNum >= level.maxclients) {
+        Scr_Error(va("kick: client number %i is out of range", clientNum));
+        return;
+    }
+    if (level.clients[clientNum].connectedState == CON_DISCONNECTED ||
+        trap_IsLocalClient(clientNum) != 0) {
+        return;
+    }
+
+    trap_DropClient(clientNum, reason);
 }
 
 /* VERIFIED_DECOMPILER(0x6e5ee, 7e5ee_script_func_setarchive.c, VERIFY-SCRIPT-BUILTINS-EARTHQUAKE-ADMIN-2026-06-17): DATAFLOW_VERIFIED; bool parameter fetch, trap_SetArchive argument order, and void return checked against current decompiler output. */
@@ -4484,10 +4573,16 @@ void script_func_ambientstop(void)
                                  (uint32_t)level.time)));
 }
 
-#define SCRIPT_FUNCTION_COUNT 120u
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: 120 original functions plus seven fs_*
+ * script file functions, kick, and execCommand. */
+#define SCRIPT_FUNCTION_COUNT 129u
 #define SCRIPTBUILTIN_METHOD_COUNT 56u
 #define SCRIPTENT_METHOD_COUNT 12u
 
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: see its definition. */
+void coduomp_script_func_kick(void);
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: see its definition. */
+void coduomp_script_func_execcommand(void);
 void GScr_GetCvar(void);
 void GScr_GetCvarInt(void);
 void GScr_GetCvarFloat(void);
@@ -4775,13 +4870,26 @@ const script_function_t functions[SCRIPT_FUNCTION_COUNT] = {
     {"precachestatusicon", script_func_precachestatusicon, 0},
     {"precacheheadicon", script_func_precacheheadicon, 0},
     {"exec", script_func_exec, 0},
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: script access to server console
+     * commands. */
+    {"execcommand", coduomp_script_func_execcommand, 0},
     {"map_restart", script_func_map_restart, 0},
     {"exitlevel", script_func_exitlevel, 0},
     {"addtestclient", script_func_addtestclient, 0},
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: CoD4x-compatible script kick. */
+    {"kick", coduomp_script_func_kick, 0},
     {"makecvarserverinfo", GScr_MakeCvarServerInfo, 0},
     {"setarchive", script_func_setarchive, 0},
     {"prof_begin", Scr_Prof_Begin, 0},
     {"prof_end", Scr_Prof_End, 0},
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: script file functions. */
+    {"fs_testfile", coduomp_script_func_fs_testfile, 0},
+    {"fs_fopen", coduomp_script_func_fs_fopen, 0},
+    {"fs_readline", coduomp_script_func_fs_readline, 0},
+    {"fs_writeline", coduomp_script_func_fs_writeline, 0},
+    {"fs_remove", coduomp_script_func_fs_remove, 0},
+    {"fs_fclose", coduomp_script_func_fs_fclose, 0},
+    {"fs_fcloseall", coduomp_script_func_fs_fcloseall, 0},
 };
 
 typedef char script_functions_count_check[

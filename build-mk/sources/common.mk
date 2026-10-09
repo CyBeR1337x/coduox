@@ -442,6 +442,8 @@ LAYOUT_CLIENT_MENU_C_SOURCES := \
 	src/client/menu/ui_window_paint.c
 
 LAYOUT_SERVER_ENGINE_C_SOURCES := \
+	src/server/engine/coduomp_geoip.c \
+	src/server/engine/coduomp_plugins.c \
 	src/server/engine/server_authorize.c \
 	src/server/engine/server_client_gamestate.c \
 	src/server/engine/server_client_maintenance.c \

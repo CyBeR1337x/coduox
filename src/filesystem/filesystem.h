@@ -89,6 +89,9 @@ void coduomp_fs_root_rename(const char *root,
                             const char *sourceQPath,
                             const char *destQPath);
 void coduomp_fs_root_remove(const char *root, const char *qpath);
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: game-module file removal; see its
+ * definition. */
+qboolean coduomp_fs_game_remove(const char *qpath);
 void FS_Rename(const char *sourceQPath, const char *destQPath);
 uint32_t FS_HashFileName(const char *name, int32_t hashSize);
 qboolean FS_PakIsPure(const pack_t *pack);

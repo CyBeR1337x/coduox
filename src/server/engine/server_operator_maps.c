@@ -212,6 +212,10 @@ void SV_MapRestart_f(void)
         return;
     }
 
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: bots do not survive map_restart
+     * either; gametype scripts add them again. */
+    coduomp_sv_drop_all_test_clients("map_restart");
+
     SV_InitCvar();
     SV_InitArchivedSnapshot();
     svs.snapFlagServerBit ^= SERVER_SNAPSHOT_RESTART_FLAG;

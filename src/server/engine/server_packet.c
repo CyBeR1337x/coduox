@@ -219,6 +219,24 @@ void SVC_GameCompleteStatus(netadr_t from)
  * Name: exact same-module Mac symbol SVC_Info. The repeated Cvar_FindVar and
  * case-insensitive hash-chain walks in the Windows instructions are expressed
  * through the maintained cvar API. */
+/* NOT_FROM_ORIGINAL_SOURCE: coduox: stores value under key, prefixed with the
+ * color escape "^<digit>" when the cvar named colorCvarName is exactly one
+ * digit 0..7. Any other cvar value, including the empty default, stores value
+ * unchanged. The cvar names match the iw1x server's g_gametype_color and
+ * mapname_color settings. */
+static void coduomp_svc_info_set_colored(char *info, const char *key,
+                                         const char *value,
+                                         const char *colorCvarName)
+{
+    const char *const color = Cvar_VariableString(colorCvarName);
+
+    if (color[0] >= '0' && color[0] <= '7' && color[1] == '\0') {
+        Info_SetValueForKey(info, key, va("^%c%s", color[0], value));
+        return;
+    }
+    Info_SetValueForKey(info, key, value);
+}
+
 void SVC_Info(netadr_t from)
 {
     int32_t privateClientCount = 0;
@@ -240,7 +258,10 @@ void SVC_Info(netadr_t from)
     Info_SetValueForKey(info, "protocol",
                         va("%i", SERVER_PROTOCOL_VERSION));
     Info_SetValueForKey(info, "hostname", sv_hostname->string);
-    Info_SetValueForKey(info, "mapname", sv_mapname->string);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: optional browser color for the map
+     * name. */
+    coduomp_svc_info_set_colored(info, "mapname", sv_mapname->string,
+                                 "mapname_color");
 
     if (connectedClientCount != 0) {
         Info_SetValueForKey(info, "clients",
@@ -255,7 +276,10 @@ void SVC_Info(netadr_t from)
                             va("%i", publicClientSlots));
     }
 
-    Info_SetValueForKey(info, "gametype", g_gametype->string);
+    /* NOT_FROM_ORIGINAL_SOURCE: coduox: optional browser color for the game
+     * type. */
+    coduomp_svc_info_set_colored(info, "gametype", g_gametype->string,
+                                 "g_gametype_color");
     if (sv_pure->integer != 0)
         Info_SetValueForKey(info, "pure", va("%i", sv_pure->integer));
     if (sv_minPing->integer != 0) {
